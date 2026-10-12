@@ -1,0 +1,24 @@
+# Secrets
+.env
+
+# Runtime data (uploads, converted audio, temporary ZIPs)
+data/
+outputs/
+sources/
+tmp/
+ytdl/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

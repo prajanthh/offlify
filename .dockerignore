@@ -1,0 +1,12 @@
+.env
+.git
+.venv
+venv
+__pycache__
+.pytest_cache
+tests
+data
+outputs
+sources
+tmp
+ytdl

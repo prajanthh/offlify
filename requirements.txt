@@ -1,0 +1,6 @@
+Flask>=3.0,<4
+requests>=2.31,<3
+python-dotenv>=1.0,<2
+yt-dlp>=2024.0
+pytest>=8.0
+gunicorn>=22; sys_platform != "win32"

@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Offlify — your music, offline</title>
+  <meta name="description" content="Offlify turns any YouTube playlist or video link into audio files you can keep and play offline.">
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/css/styles.css">
+  <script src="/static/js/app.js" defer></script>
+</head>
+<body>
+  <div class="backdrop" aria-hidden="true">
+    <span class="orb orb-a"></span><span class="orb orb-b"></span><span class="orb orb-c"></span>
+    <span class="note">&#9834;</span><span class="note">&#9835;</span><span class="note">&#9834;</span>
+    <span class="note">&#9833;</span><span class="note">&#9835;</span><span class="note">&#9834;</span>
+    <span class="note">&#9833;</span><span class="note">&#9835;</span>
+  </div>
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <a class="brand" href="/" aria-label="Offlify home">
+        <span class="brand-mark" aria-hidden="true">
+          <span></span><span></span><span></span><span></span>
+        </span>
+        <span>
+          <span class="brand-name">Offlify</span>
+          <span class="brand-tag">Your music, offline.</span>
+        </span>
+      </a>
+      <div class="status-chips" id="statusChips" aria-live="polite"></div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div id="serverNotice" class="notice notice-warn" hidden></div>
+
+    <section id="introCard" class="card intro" aria-labelledby="fetchHeading">
+      <h1 id="fetchHeading" class="hero-title">Take your music <span class="hero-accent">offline</span>.</h1>
+      <p class="muted">
+        Paste a YouTube <strong>playlist</strong> or <strong>video</strong> link.
+        Pick what you want and save it as audio you can play anywhere, no connection needed.
+      </p>
+      <form id="playlistForm" class="url-form" novalidate>
+        <label for="playlistUrl" class="visually-hidden">YouTube playlist or video link</label>
+        <input id="playlistUrl" name="url" type="url" inputmode="url" autocomplete="off" spellcheck="false"
+               placeholder="Paste a playlist or video link…" required>
+        <button id="fetchBtn" class="btn btn-primary" type="submit">
+          <span class="btn-label">Fetch</span>
+        </button>
+      </form>
+      <p id="urlError" class="field-error" role="alert" hidden></p>
+      <ul class="link-kinds small muted" aria-label="Supported links">
+        <li>Playlists</li>
+        <li>Single videos</li>
+        <li>youtu.be links</li>
+        <li>Shorts</li>
+      </ul>
+    </section>
+
+    <section id="emptyState" class="empty">
+      <div class="empty-art" aria-hidden="true">
+        <span></span><span></span><span></span><span></span><span></span>
+      </div>
+      <p class="empty-title">Nothing loaded yet</p>
+      <p class="muted">Paste a playlist or video link above to get started.</p>
+    </section>
+
+    <section id="loadingState" class="card" hidden aria-busy="true" aria-label="Loading">
+      <div class="skeleton skeleton-head"></div>
+      <div class="skeleton skeleton-row"></div>
+      <div class="skeleton skeleton-row"></div>
+      <div class="skeleton skeleton-row"></div>
+    </section>
+
+    <section id="playlistSection" class="card playlist" hidden aria-labelledby="playlistTitle">
+      <div class="playlist-head">
+        <img id="playlistThumb" class="playlist-thumb" alt="" hidden referrerpolicy="no-referrer">
+        <div class="playlist-info">
+          <p id="playlistKind" class="eyebrow">Playlist</p>
+          <h2 id="playlistTitle" class="playlist-title"></h2>
+          <p id="playlistMeta" class="muted"></p>
+        </div>
+      </div>
+      <p id="truncatedNotice" class="notice notice-info" hidden></p>
+
+      <div id="toolbar" class="toolbar">
+        <div class="toolbar-group">
+          <button class="btn btn-ghost" type="button" id="selectAllBtn">Select all</button>
+          <button class="btn btn-ghost" type="button" id="deselectAllBtn">Deselect all</button>
+          <span id="selectionSummary" class="muted small"></span>
+        </div>
+      </div>
+
+      <ol id="trackList" class="track-list"></ol>
+    </section>
+
+    <section id="resultsSection" class="card results" hidden aria-labelledby="resultsHeading">
+      <div class="results-head">
+        <h2 id="resultsHeading" class="section-title">Results</h2>
+        <a id="zipBtn" class="btn btn-primary" href="#" hidden>Download ZIP</a>
+      </div>
+      <div id="completedBlock" hidden>
+        <h3 class="sub-title">Completed</h3>
+        <ul id="completedList" class="file-list"></ul>
+      </div>
+      <div id="failedBlock" hidden>
+        <div class="results-head">
+          <h3 class="sub-title">Failed or cancelled</h3>
+          <button id="retryBtn" class="btn btn-secondary" type="button">Retry these</button>
+        </div>
+        <ul id="failedList" class="file-list failed"></ul>
+      </div>
+    </section>
+  </main>
+
+  <div id="processBar" class="process-bar" hidden>
+    <div class="wrap process-inner">
+      <div class="process-controls">
+        <label class="format-field">
+          <span class="small muted">Format</span>
+          <select id="formatSelect" aria-label="Output format"></select>
+        </label>
+        <button id="processSelectedBtn" class="btn btn-primary" type="button">Download selected</button>
+        <button id="processAllBtn" class="btn btn-secondary" type="button">Download all</button>
+        <button id="cancelBtn" class="btn btn-danger" type="button" hidden>Cancel</button>
+      </div>
+      <div class="overall">
+        <div class="overall-text">
+          <span id="overallLabel" class="small">Ready</span>
+          <span id="overallPct" class="small mono"></span>
+        </div>
+        <div class="progress" role="progressbar" aria-label="Overall progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="overallBar">
+          <span id="overallFill"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toasts" class="toasts" aria-live="polite" aria-atomic="false"></div>
+
+  <footer class="site-footer wrap">
+    <p class="small muted">
+      Audio is downloaded from YouTube using yt-dlp. Please ensure you have the right to download any content you process.
+    </p>
+  </footer>
+</body>
+</html>
