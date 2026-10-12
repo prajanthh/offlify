@@ -1,41 +1,49 @@
 # Offlify
 
-Paste a YouTube playlist URL to get its track list (titles, artwork, durations,
-order) from the **official YouTube Data API v3**. Then attach **audio files you
-own or are licensed to use** to those tracks, convert them to MP3 / WAV / FLAC /
-OGG / M4A with FFmpeg, and download them one by one or as a ZIP.
+**Your music, offline.** Paste a YouTube playlist or video link, pick the tracks
+you want, and save them as audio files (MP3, WAV, FLAC, OGG or M4A) that play
+anywhere without a connection.
 
-> **What this app does not do:** it never downloads, streams, decrypts or
-> rips audio or video from YouTube. Having access to a playlist's *metadata*
-> does not give you permission to obtain its *audio*. The playlist is used as
-> a track list; the audio always comes from your own files or from servers
-> you are authorised to use.
+Offlify is a small web app you run **on your own computer**. It reads track
+lists through the official YouTube Data API v3, downloads audio with
+[yt-dlp](https://github.com/yt-dlp/yt-dlp), and converts it with FFmpeg.
 
----
+> **Use it responsibly.** Only download content you have the right to download:
+> your own uploads, Creative Commons or public-domain material, or content you
+> have permission for. Downloading other content may breach YouTube's Terms of
+> Service and copyright law in your country. You are responsible for how you
+> use this tool.
 
-## 1. Prerequisites
+## What you need
 
-| Requirement | Version |
+| Requirement | Notes |
 |---|---|
-| Python | 3.10 – 3.13 (tested on 3.13) |
-| FFmpeg + ffprobe | 4.4 or newer (tested on 6.1) |
-| A Google account | to create a YouTube Data API key |
+| Python | 3.10 or newer |
+| FFmpeg + ffprobe | on your `PATH` |
+| A YouTube Data API key | free, from a Google account (steps below) |
 
-## 2. Install Python dependencies
+## Setup
+
+### 1. Clone and install
 
 ```bash
-cd playlist-audio-studio
-python3 -m venv .venv
+git clone https://github.com/prajanthh/offlify.git
+cd offlify
+python -m venv .venv
+```
 
-# macOS / Linux
-source .venv/bin/activate
+Activate the environment, then install the dependencies:
+
+```bash
 # Windows (PowerShell)
 .venv\Scripts\Activate.ps1
+# macOS / Linux
+source .venv/bin/activate
 
 pip install -r requirements.txt
 ```
 
-## 3. Install FFmpeg
+### 2. Install FFmpeg
 
 | OS | Command |
 |---|---|
@@ -43,148 +51,128 @@ pip install -r requirements.txt
 | macOS | `brew install ffmpeg` |
 | Ubuntu / Debian | `sudo apt update && sudo apt install ffmpeg` |
 
-Check it: `ffmpeg -version` and `ffprobe -version` should both print a version.
-The app detects which encoders your build has and only offers those formats.
+Check it with `ffmpeg -version`.
 
-## 4. Get a YouTube Data API key
+### 3. Get your own YouTube Data API key
+
+Each person needs their own key. It is free and takes a few minutes.
 
 1. Go to <https://console.cloud.google.com/> and create (or pick) a project.
 2. **APIs & Services → Library** → search **YouTube Data API v3** → **Enable**.
 3. **APIs & Services → Credentials → Create credentials → API key**.
 4. Recommended: **Edit API key → API restrictions → Restrict key → YouTube Data API v3**.
 
-The free quota is 10,000 units/day. Fetching a playlist costs roughly
-`2 + 2 × ceil(items / 50)` units, so a 200-item playlist is about 10 units.
+The free quota is 10,000 units a day. Loading a video costs 1 unit and a
+60-track playlist about 5, so normal personal use stays far below the limit.
 
-An API key can read **public and unlisted** playlists. Private playlists,
-Watch Later, Liked videos and auto-generated Mixes (`RD…`) can't be read with
-an API key, and the app explains this when you try.
-
-## 5. Configure environment variables
+### 4. Add the key
 
 ```bash
 cp .env.example .env        # Windows: copy .env.example .env
 ```
 
-Edit `.env` and set at least:
+Open `.env` and set:
 
 ```
 YOUTUBE_API_KEY=your-key-here
 ```
 
-All options are documented in `.env.example` (upload size, playlist size,
-worker threads, file lifetime, optional source-URL allowlist). The key is only
-read by the Flask server and is never sent to the browser or written to logs.
+`.env` is in `.gitignore`. Never commit it or share your key.
 
-## 6. Start the server
+### 5. Run
 
 ```bash
 python app.py
 ```
 
-You should see `Running on http://127.0.0.1:5000`.
+Open **<http://127.0.0.1:5000>** in your browser.
 
-## 7. Open the app
+## Using it
 
-Go to **<http://127.0.0.1:5000>** in your browser.
+1. Paste a link and click **Fetch**. These all work:
+   - playlists: `youtube.com/playlist?list=PL…`
+   - videos: `youtube.com/watch?v=…`, `youtu.be/…`, Shorts
+2. For a playlist, tick the tracks you want. A single video needs no selection.
+3. Choose a format and click **Download**.
+4. Save each finished file, or grab them all with **Download ZIP**.
 
-1. Paste a playlist URL and click **Fetch playlist**.
-2. Attach audio: click **Attach audio** on a track, or use **Attach files…**
-   to match many files at once by title or by a leading track number
-   (`03 - Coastline.mp3`).
-3. Pick a format and click **Process selected** or **Process all**.
-4. Watch per-track and overall progress, **Cancel** if needed, **Retry** failures.
-5. Download files individually or click **Download ZIP**.
+The chips in the header show whether the API key, FFmpeg and yt-dlp are ready.
 
-The header chips show whether the API key and FFmpeg are configured.
+Private playlists, Watch Later, Liked videos and auto-generated Mixes cannot be
+read with an API key. A video link taken from inside one of those lists still
+loads as a single video.
 
-## 8. Run the tests
+## Good to know
+
+- **Run it at home, not on a cloud server.** YouTube blocks downloads from most
+  hosting providers with a "confirm you're not a bot" check. Playlists still
+  load there, but downloads fail. On a home connection it works.
+- **GitHub Pages cannot run it.** Offlify needs its Python server, so a static
+  host only shows a page that does nothing.
+- **Use it from your phone** by running it on your PC and sharing it privately
+  with a tool such as [Tailscale](https://tailscale.com/) (`tailscale serve 5000`).
+- **Downloads failing after working before?** YouTube changes often. Update
+  yt-dlp with `pip install -U yt-dlp`.
+- Downloaded and converted files are stored in `data/` and deleted
+  automatically after two hours (`FILE_TTL_SECONDS` in `.env`).
+
+## Docker (optional)
+
+```bash
+docker build -t offlify .
+docker run -p 8000:8000 -e YOUTUBE_API_KEY=your-key-here offlify
+```
+
+Then open <http://localhost:8000>. The image turns on a per-visitor rate limit
+(`RATE_LIMIT_PER_MINUTE`) and expects one reverse proxy in front of it
+(`TRUSTED_PROXIES`); see `.env.example`.
+
+## Tests
 
 ```bash
 pytest
 ```
 
-124 tests cover URL validation, pagination (including more than 50 items),
-deleted/private items, API error mapping, filename sanitisation, race-safe
-unique filenames, real FFmpeg conversion to every format, cancellation,
-retries, ZIP creation, upload limits, SSRF guards and path-traversal attempts.
-FFmpeg-dependent tests are skipped automatically if FFmpeg isn't installed.
-No real API key or network access is needed, because the YouTube API is stubbed.
+The YouTube API is stubbed, so no key or network access is needed. Tests that
+need FFmpeg are skipped if it is not installed.
 
 ## Project structure
 
 ```
-playlist-audio-studio/
-├── app.py                      Flask app, config, REST routes, error handling, security headers
+offlify/
+├── app.py                      Flask app, config, REST routes, rate limit, security headers
 ├── services/
-│   ├── playlist_service.py     YouTube Data API v3: playlist, paginated items, video details
-│   ├── audio_service.py        Upload / allowlisted-URL ingestion, ffprobe check, FFmpeg conversion
-│   ├── job_service.py          Background jobs: thread pool, progress, cancel, retry, cleanup
+│   ├── playlist_service.py     YouTube Data API v3: playlists, single videos, video details
+│   ├── ytdlp_service.py        Audio download through yt-dlp
+│   ├── audio_service.py        FFmpeg conversion and file checks
+│   ├── job_service.py          Background jobs: progress, cancel, retry, cleanup
 │   └── archive_service.py      ZIP creation with safe, de-duplicated names
-├── utils/
-│   ├── validators.py           Playlist URL parsing, IDs, formats, track lists, source URLs
-│   └── file_utils.py           Filename sanitising, unique paths, containment checks
+├── utils/                      Link validation and filename helpers
 ├── static/                     index.html, css/styles.css, js/app.js, favicon.svg
-├── tests/                      pytest suite (+ conftest with a fake YouTube API)
+├── tests/                      pytest suite
+├── Dockerfile
 ├── requirements.txt
-├── .env.example
-├── pytest.ini
-└── .gitignore
+└── .env.example
 ```
 
-## REST API
+## Main API routes
 
 | Method & path | Purpose |
 |---|---|
-| `GET /api/health` | Status, FFmpeg/API-key availability, formats, limits |
-| `POST /api/playlist` `{url}` | Validated, fully paginated, normalised playlist metadata |
-| `POST /api/sources` (multipart `file`) | Upload an authorised audio file → `source_id` |
-| `POST /api/sources/url` `{url}` | Fetch from an allowlisted https host (disabled by default) |
-| `DELETE /api/sources/<source_id>` | Remove an uploaded source |
-| `POST /api/process` `{format, items[], playlist_title}` | Start a job; `items` = `{track_id, position, title, source_id}` |
-| `GET /api/jobs/<job_id>` | Overall + per-track status and progress |
+| `GET /api/health` | Status, FFmpeg / API-key availability, formats, limits |
+| `POST /api/resolve` `{url}` | Load a playlist or a single video from a link |
+| `POST /api/process-youtube` `{format, items[], playlist_title}` | Start a download job |
+| `GET /api/jobs/<job_id>` | Overall and per-track progress |
 | `POST /api/jobs/<job_id>/cancel` | Cancel queued and running tracks |
-| `POST /api/jobs/<job_id>/retry` `{track_ids?, sources?}` | Retry failed/cancelled tracks, optionally with new sources |
-| `GET /api/download/<file_id>` | Download one converted file |
-| `GET /api/download-zip/<job_id>` | ZIP of all completed files in a job |
+| `POST /api/jobs/<job_id>/retry` | Retry failed or cancelled tracks |
+| `GET /api/download/<file_id>` | Download one finished file |
+| `GET /api/download-zip/<job_id>` | ZIP of all finished files in a job |
 
 Errors are always JSON: `{"error": "human-readable message"}`.
 
-## Security measures
-
-- API key only in `.env`/environment; never returned, logged (urllib3 debug logging is silenced), or included in error messages.
-- Playlist URLs: only http(s) on known YouTube hosts, no credentials or odd ports, strict ID pattern.
-- Uploads: extension allowlist, streamed size limit, verified by ffprobe, stored under a random server-chosen name (client filenames are never used as paths).
-- FFmpeg runs without a shell, with `-protocol_whitelist file` and `file:` paths, so inputs can't be interpreted as network URLs; it has a timeout and is killed on cancel.
-- Output names come from sanitised titles and are reserved atomically (`O_EXCL`), so nothing is overwritten. Duplicates become `Title (2).mp3`.
-- Downloads are served only by opaque IDs from the server's own registry; there are no filesystem paths in URLs.
-- URL sources (optional): https only, exact-host allowlist, DNS must resolve to public IPs, no redirects, size-limited.
-- Strict Content-Security-Policy, `nosniff`, `X-Frame-Options: DENY`, `no-referrer`; the frontend inserts all remote text with `textContent`.
-- Unhandled errors return a generic 500 message; details go to the server log only.
-- Temporary `.part` files, failed outputs and ZIPs are cleaned up; sources and outputs expire after `FILE_TTL_SECONDS`.
-
 ## Limitations
 
-- **Audio must be supplied by you.** Tracks without an attached file are skipped.
-  The playlist only provides names and order.
-- **In-memory job manager.** Jobs live in the Flask process: restarting the
-  server forgets them, and it must run as a single process (one Gunicorn worker
-  or `python app.py`). To scale out, move `JobManager._submit` to a Celery task
-  with Redis as broker and store job/item state in Redis or a database, keeping
-  the same method signatures so routes don't change.
-- Progress percentage needs a known duration (read by ffprobe). It falls back to
-  queued → processing → done for formats that don't report one.
-- Bulk matching is a title-similarity heuristic. Check the matches and fix any
-  mismatches with the per-track button.
-- The Flask dev server is for local use. For a shared deployment, run behind a
-  production WSGI server and reverse proxy with HTTPS and authentication.
-- The DNS check for URL sources narrows but can't fully eliminate DNS-rebinding
-  attacks; only allowlist hosts you control or trust.
-
-## Copyright and authorisation
-
-You are responsible for having the rights to every audio file you process.
-YouTube's Terms of Service prohibit downloading content except where YouTube
-provides a download option. This project respects that by design: it uses
-YouTube only for metadata, via the official API, and contains no code to fetch
-YouTube media.
+- Jobs live in memory: restarting the server forgets them, and it must run as a
+  single process.
+- `python app.py` starts Flask's development server, which is meant for use on
+  your own machine.

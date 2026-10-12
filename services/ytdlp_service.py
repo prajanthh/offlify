@@ -127,6 +127,11 @@ class YtDlpDownloader:
         except yt_dlp.utils.DownloadError as exc:
             self._cleanup_partial(download_id)
             msg = str(exc)
+            if "not a bot" in msg.lower():
+                raise DownloadError(
+                    "YouTube blocked this server's connection (bot check). "
+                    "Downloads work when Offlify runs on a home connection.", 502
+                ) from exc
             if "private" in msg.lower() or "sign in" in msg.lower():
                 raise DownloadError("This video is private or requires sign-in.", 403) from exc
             if "not available" in msg.lower() or "unavailable" in msg.lower():
